@@ -124,6 +124,52 @@ information found"), **CLARIFIES** (a follow-up it cannot resolve
 safely), or **ROUTES** (an official helpline, a legal-aid service, or a
 government-services portal). It never fills the gap.
 
+### Deterministic safety routing
+
+Every query is assessed by the deterministic safety router
+(`services/ai/app/safety/risk.py`) **before** any legal retrieval runs.
+No LLM and no trained classifier is involved: the router is a rule-based
+policy that combines three independent signals -- the **subject** of the
+query (tiered by potential harm), its **framing** (informational vs.
+instructional vs. personal), and its **immediacy** (whether the
+situation is presented as live) -- plus grammatical constraints and
+tense, rather than matching single keywords. Every routing decision is
+therefore auditable: the matched category is returned in the response's
+`reason` field.
+
+The four outcomes:
+
+| Severity | Behaviour |
+| --- | --- |
+| `normal` | Straight through to the ordinary legal retrieval pipeline, unchanged. |
+| `serious` | A real legal matter affecting the asker (a live accusation, an interrogation, an imminent arrest). A caution and a legal-aid route lead the response; retrieval still runs so the general law can be shown behind the same confidence gate. |
+| `emergency` | An immediate-danger situation presented as real and current. A fixed official-helpline message is returned and **zero retrieval happens** -- retrieved legal provisions are never shown as the answer to someone in danger. |
+| `harmful_request` | A request for help obstructing justice (destroying evidence, fabricating an alibi, intimidating a witness, evading an investigation). Refused outright; no retrieval. |
+
+The router distinguishes an active personal-safety situation from a
+legal-information question about the same crime:
+
+```text
+"I am being kidnapped"                    -> emergency (helpline, no retrieval)
+"there is a thief in my house right now"  -> emergency (helpline, no retrieval)
+"What is the punishment for kidnapping?"  -> normal legal retrieval
+"What is the punishment for murder?"      -> normal legal retrieval
+```
+
+A purely educational framing ("what does the law say about...",
+impersonal, non-urgent) keeps heavy subject words on the normal path,
+and an explicitly historical account ("...years ago", with no immediacy
+marker) is answered with the law rather than a redirect -- immediacy
+always defeats the historical reading, never the reverse. Emergency
+messages are fixed configuration text naming only official national
+helplines (112, 181, 1098, 1930); nothing is generated or invented.
+
+This is a deliberately conservative rule policy, not an exhaustive
+emergency classifier: it will not recognise every possible phrasing of
+danger, and anything it does not recognise falls through to the ordinary
+guards and confidence gate. Its contract is pinned by the severity
+matrix in `services/ai/tests/test_safety.py`.
+
 ### The 0% generative LLM invariant
 
 **No generative LLM runs anywhere in the legal-answer pipeline. Not as a

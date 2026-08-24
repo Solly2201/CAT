@@ -253,6 +253,83 @@ _THREAT_TO_LIFE_SUBJECTS = _compile([
     r"\b(kidnap\w*|abduct\w*)\b[^.?!]{0,30}\b(my|me|him|her|them|our|is missing|right now)\b",
     r"\b(locked|held|trapped|confined) (me|us|her|him|them)\b",
     r"\b(has|have|is|was) (been )?(kidnapped|abducted|taken away)\b",
+    # First-person passive victimisation: "I am being kidnapped", "we are
+    # being attacked", "I'm being held hostage". Every active pattern
+    # above requires the attacker to be the grammatical subject, so the
+    # plainest phrasing a victim uses -- themselves as subject, the crime
+    # in the present progressive -- graded normal (measured on "I am
+    # being kidnapped", which went to ordinary retrieval and returned BNS
+    # s.142 on concealing a kidnapped person).
+    r"\b(i am|i'm|we are|we're) being (kidnapped|abducted|attacked|assaulted|beaten|"
+    r"stabbed|shot( at)?|strangled|choked|chased|robbed|raped|molested|"
+    r"held hostage|held captive|held against (my|our) will|taken against (my|our) will)\b",
+    # Hostage / captivity, whoever the subject is.
+    r"\b(held|taken|being held|holding (me|us|him|her|them)) hostage\b",
+    r"\b(i am|i'm|we are|we're) (a )?(hostage|captive)\b",
+    r"\btaken against (my|our|his|her|their) will\b",
+    r"\b(they|he|she) (won'?t|will not|refuses? to) let (me|us) (leave|go|out)\b",
+    r"\b(i|we) can('t|not) (get away|get out|escape|leave)\b",
+    # Self-declared immediate danger: "I am in immediate danger", "we are
+    # not safe". "Trapped" alone is excluded when it describes a
+    # contract, debt or job -- a figurative trap is a legal question,
+    # not a 112 call.
+    r"\b(i am|i'm|we are|we're) (in (immediate |grave |serious )?danger|not safe|unsafe)\b",
+    r"\b(i am|i'm|we are|we're) trapped\b"
+    r"(?![^.?!]{0,20}\b(contract|loan|debt|lease|job|scheme|agreement|marriage|deal)\b)",
+    # An armed person and hostility directed at the speaker: "someone has
+    # a gun and is threatening me". The trailing clause is required so
+    # "is it legal to carry a knife" and "he has a licensed gun" stay
+    # ordinary legal questions.
+    r"\b(someone|somebody|a man|a woman|a guy|a stranger|an intruder|he|she|they)\b[^.?!]{0,25}"
+    r"\b(has|have|got|holding|carrying|pulled out|waving|pointing|brandishing) a?n? ?"
+    r"(gun|knife|weapon|pistol|revolver|firearm|blade|axe|acid)\b"
+    r"[^.?!]{0,45}\b(threat\w*|attack\w*|kill\w*|hurt\w*|stab\w*|shoot\w*|chas\w*|at (me|us)\b)",
+    # A bare threat from an unnamed person: "someone is threatening me
+    # right now", "they are threatening us". Scoped to unnamed subjects
+    # (a named relation like a landlord or employer signals a dispute,
+    # not an ambush) and stood down when the threat is a legal one --
+    # "he is threatening me with a defamation case" is a question about
+    # a dispute, not a call for help.
+    r"\b(someone|somebody|a man|a woman|a guy|a stranger|he|she|they)\b[^.?!]{0,20}"
+    r"\b(is|are|keeps?) threatening (me|us)\b"
+    r"(?![^.?!]{0,35}\b(case|court|lawsuit|suit|legal action|defamation|complaint|fir|notice|"
+    r"eviction|divorce)\b)",
+    r"\b(i am|i'm|we are|we're) being threatened\b"
+    r"(?![^.?!]{0,35}\b(case|court|lawsuit|suit|legal action|defamation|complaint|fir|notice|"
+    r"eviction|divorce)\b)",
+])
+
+# A stranger inside or breaking into the speaker's home, described as
+# present. This group did not exist before, and its absence was measured
+# directly: "there is a thief in my house" retrieved BNSS s.129 on
+# habitual offenders, and "there is a thief in my house right now"
+# retrieved BNS s.331 on house-breaking -- semantically related law,
+# uselessly and dangerously beside the point for someone hiding from an
+# intruder.
+#
+# Present tense only, by construction: "there IS a thief in my house"
+# routes to 112, while "there WAS a thief in my house yesterday" is a
+# burglary report -- a legitimate legal question about a past crime --
+# and falls through to ordinary retrieval. "My neighbour is a thief"
+# carries no in-my-home clause and stays untouched.
+_HOME_INTRUSION_SUBJECTS = _compile([
+    # "there is a thief in my house", "there's an intruder inside our flat"
+    r"\b(there('s| is| are)|someone('s| is)|somebody('s| is))\b[^.?!]{0,30}"
+    r"\b(thief|thieves|intruder|burglar|robber|stranger|armed (man|men|person|people))\b"
+    r"[^.?!]{0,25}\b(in|inside|entering) (my|our|the) (house|home|flat|apartment|room|"
+    r"compound|shop|office|building)\b",
+    # "someone is in my house", "an intruder is inside our home"
+    r"\b(someone|somebody|an? (intruder|thief|burglar|robber|stranger)) (is|are)\b"
+    r"[^.?!]{0,15}\b(in|inside) (my|our) (house|home|flat|apartment|room)\b",
+    # "someone broke into my house", "a burglar is breaking into our home".
+    # The past form is deliberately included: a break-in is reported
+    # minutes, not months, after it happens, and the asymmetric-cost rule
+    # (see _is_historical) puts the ambiguity on the emergency side. An
+    # explicit historical marker still stands it down via assess_query.
+    r"\b(broke|has broken|have broken|is breaking|are breaking|breaking) into\b[^.?!]{0,20}"
+    r"\b(my|our) (house|home|flat|apartment|room|shop|office)\b",
+    r"\bhome invasion\b",
+    r"\bbreak[- ]?in\b[^.?!]{0,20}\b(happening|in progress|going on|right now)\b",
 ])
 
 # Ongoing violence by someone the speaker does not name a relationship
@@ -289,6 +366,7 @@ _LIFE_THREATENING_SUBJECTS = (
     + _THREAT_TO_LIFE_SUBJECTS
     + _UNNAMED_ABUSER_SUBJECTS
     + _ACTIVE_CRIME_SUBJECTS
+    + _HOME_INTRUSION_SUBJECTS
 )
 
 # Tier B: a real legal matter where personalised procedural coaching would
@@ -712,6 +790,11 @@ def _emergency_category(text: str) -> str | None:
     if _any(_THREAT_TO_LIFE_SUBJECTS, text) or _any(_UNNAMED_ABUSER_SUBJECTS, text):
         return "threat_to_life"
     if _any(_ACTIVE_CRIME_SUBJECTS, text):
+        return "active_crime"
+    # An intruder in the home is a crime in progress: the active_crime
+    # message names 112 and tells the person to get somewhere safe,
+    # which is the right response whether or not anything is stolen.
+    if _any(_HOME_INTRUSION_SUBJECTS, text):
         return "active_crime"
     # Stalking routes to active_crime: its message names 112, tells the
     # person to get somewhere safe, and does not assume a home setting
