@@ -16,6 +16,12 @@ jobs:
     name: Build and smoke-test the compose stack
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # The single production value, set once for every step below so no
+      # step can build or query with a different model. Service-root-
+      # relative, exactly the form index_manifest.json records -- see the
+      # M13 section of docs/RETRIEVAL_EVALUATION.md.
+      DENSE_EMBEDDING_MODEL: data/models/m12_run2
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +33,67 @@ jobs:
       - name: Report image sizes
         run: docker images --format '{{.Repository}}:{{.Tag}} {{.Size}}' | sort
 
+      # --- Retrieval artifacts ------------------------------------------
+      # docker-compose.yml mounts ./services/ai/data into the AI container
+      # read-only, so data/index, data/models/m12_run2 and the corpus
+      # chunk files have to exist on the runner *before* `docker compose
+      # up`. None of them are committed (a ~90 MB model binary and the
+      # index are build artifacts, per .gitignore and the README's
+      # deployment section), which is why a clean checkout used to boot
+      # an AI service whose warm-up died on a missing index_manifest.json
+      # and answered every legal question with a 503.
+      #
+      # CI never rebuilds any of this. m12_run2 is the frozen, already-
+      # validated production fine-tune (see the M13 section of
+      # docs/RETRIEVAL_EVALUATION.md), so the exact production files --
+      # model, hybrid index, and the chunk text the index cites -- are
+      # published once as a GitHub Release asset and downloaded here,
+      # pinned by SHA-256. A checksum mismatch fails the job immediately:
+      # no retraining in CI, no fallback model, no cache substitute.
+      - name: Download the frozen m12_run2 retrieval artifact
+        env:
+          ASSET_URL: https://github.com/Solly2201/CAT/releases/download/m12_run2-retrieval-v1/cat-retrieval-m12_run2.tar.gz
+          EXPECTED_SHA256: 9b964c2b21de8707dfd5f19fa9f518ca6d94f31d6b067c1176c26493b7832ace
+        run: |
+          curl -fSL --retry 5 --retry-all-errors -o retrieval-artifact.tar.gz "$ASSET_URL"
+          actual=$(sha256sum retrieval-artifact.tar.gz | cut -d' ' -f1)
+          if [ "$actual" != "$EXPECTED_SHA256" ]; then
+            echo "::error::retrieval artifact checksum mismatch: expected $EXPECTED_SHA256, got $actual"
+            exit 1
+          fi
+          echo "sha256 verified: $actual"
+          tar -xzf retrieval-artifact.tar.gz -C services/ai/data
+          rm retrieval-artifact.tar.gz
+
+      # build_index() degrades to lexical-only rather than failing when
+      # the dense layer cannot be built (missing weights, no network), and
+      # index_manifest.json is the single source of truth for what is
+      # live. Assert it here so a silent downgrade to BM25-only, or to the
+      # base checkpoint, fails the job instead of being smoke-tested as if
+      # it were production.
+      - name: Assert the index records the production model
+        working-directory: services/ai
+        run: |
+          manifest=data/index/index_manifest.json
+          cat "$manifest"
+          mode=$(jq -r '.mode' "$manifest")
+          model=$(jq -r '.dense_embedding_model' "$manifest")
+          dim=$(jq -r '.dense_embedding_dim' "$manifest")
+          if [ "$mode" != "hybrid" ]; then
+            echo "::error::index mode is '$mode', expected 'hybrid' -- the dense layer silently fell back to BM25-only"
+            exit 1
+          fi
+          if [ "$model" != "$DENSE_EMBEDDING_MODEL" ]; then
+            echo "::error::index was built with '$model', expected '$DENSE_EMBEDDING_MODEL'"
+            exit 1
+          fi
+          if [ "$dim" != "384" ]; then
+            echo "::error::index embedding dimension is $dim, expected 384"
+            exit 1
+          fi
+          test -f "$DENSE_EMBEDDING_MODEL/model.safetensors"
+          echo "index: mode=$mode model=$model dim=$dim"
+
       - name: Start the stack
         env:
           # Never a real secret: this job only exercises a throwaway stack.
@@ -35,18 +102,86 @@ jobs:
 
       - name: Wait for services to report healthy
         run: |
-          for _ in $(seq 1 60); do
-            api=$(curl -fsS http://localhost:4000/health || true)
-            ai=$(curl -fsS http://localhost:8000/health || true)
-            web=$(curl -fsS -o /dev/null -w '%{http_code}' http://localhost:5173/ || true)
-            if [ -n "$api" ] && [ -n "$ai" ] && [ "$web" = "200" ]; then
-              echo "api: $api"
-              echo "ai:  $ai"
+          # The AI service answers /health with 200 even when retrieval is
+          # broken: a warm-up failure is deliberately non-fatal so the
+          # corpus browser keeps serving (see app/main.py's _warm_up). The
+          # previous check treated any non-empty body as healthy, which is
+          # exactly how a missing index reached the legal smoke test as a
+          # 503. Four outcomes are distinguished:
+          #
+          #   curl exit != 0     not listening yet        -> retry
+          #   HTTP != 200        serving but not healthy  -> retry
+          #   warmup_error set   AI application error     -> fail now
+          #   retrieval_warm     genuinely healthy        -> proceed
+          #
+          # Warm-up runs inside the lifespan startup, before uvicorn
+          # accepts a connection, so its outcome is already final the
+          # first time /health answers -- retrying an application error
+          # would only delay reporting the real reason.
+          body=$(mktemp)
+          err=$(mktemp)
+          ai="pending (no response yet)"
+          ai_kind=connection-failure
+
+          for attempt in $(seq 1 60); do
+            api_code=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' http://localhost:4000/health 2>/dev/null || true)
+            web_code=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' http://localhost:5173/ 2>/dev/null || true)
+
+            ai_kind=connection-failure
+            ai_code=$(curl -sS -m 10 -o "$body" -w '%{http_code}' http://localhost:8000/health 2>"$err") \
+              && ai_kind=responded \
+              || ai="connection failure: $(tr -d '\r\n' <"$err")"
+
+            if [ "$ai_kind" = responded ]; then
+              if [ "$ai_code" != "200" ]; then
+                ai_kind=http-failure
+                ai="HTTP $ai_code"
+              elif ! jq -e . >/dev/null 2>&1 <"$body"; then
+                ai_kind=http-failure
+                ai="HTTP 200 with a non-JSON body"
+              else
+                status=$(jq -r '.status' "$body")
+                warm=$(jq -r '.retrieval_warm' "$body")
+                warm_err=$(jq -r '.warmup_error // empty' "$body")
+                if [ -n "$warm_err" ]; then
+                  ai_kind=app-error
+                  ai="warmup_error: $warm_err"
+                elif [ "$status" != "ok" ]; then
+                  ai_kind=app-error
+                  ai="status: $status"
+                elif [ "$warm" != "true" ]; then
+                  ai_kind=not-warm
+                  ai="retrieval_warm: $warm"
+                else
+                  ai_kind=healthy
+                  ai="warmed in $(jq -r '.warmup_seconds' "$body")s"
+                fi
+              fi
+            fi
+
+            if [ "$ai_kind" = app-error ]; then
+              echo "::error::AI service is serving but reports an application error -- $ai"
+              echo "Decided during startup warm-up, so waiting cannot clear it."
+              echo "A missing or unreadable data/index or data/models artifact surfaces here."
+              jq . "$body" || cat "$body"
+              docker compose ps
+              docker compose logs --tail 80 ai
+              exit 1
+            fi
+
+            if [ "$api_code" = "200" ] && [ "$web_code" = "200" ] && [ "$ai_kind" = healthy ]; then
+              echo "api: HTTP $api_code"
+              echo "web: HTTP $web_code"
+              echo "ai:  healthy ($ai)"
+              jq . "$body"
               exit 0
             fi
+
+            echo "attempt $attempt: api=${api_code:-000} web=${web_code:-000} ai=$ai_kind ($ai)"
             sleep 5
           done
-          echo "Services did not become healthy in time"
+
+          echo "::error::Services did not become healthy in time -- last AI state: $ai_kind ($ai)"
           docker compose ps
           docker compose logs --tail 80
           exit 1
