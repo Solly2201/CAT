@@ -142,7 +142,7 @@ The four outcomes:
 | Severity | Behaviour |
 | --- | --- |
 | `normal` | Straight through to the ordinary legal retrieval pipeline, unchanged. |
-| `serious` | A real legal matter affecting the asker (a live accusation, an interrogation, an imminent arrest). A caution and a legal-aid route lead the response; retrieval still runs so the general law can be shown behind the same confidence gate. |
+| `serious` | A real legal matter affecting the asker: a live accusation, an interrogation, an imminent arrest -- or a serious incident they personally experienced that is now over (a past burglary, a past assault, abuse that has ended). A caution and a legal-aid route lead the response (`redirect_adviser`); retrieval still runs so the general law can be shown behind the same confidence gate, never as a plain answer. |
 | `emergency` | An immediate-danger situation presented as real and current. A fixed official-helpline message is returned and **zero retrieval happens** -- retrieved legal provisions are never shown as the answer to someone in danger. |
 | `harmful_request` | A request for help obstructing justice (destroying evidence, fabricating an alibi, intimidating a witness, evading an investigation). Refused outright; no retrieval. |
 
@@ -158,9 +158,11 @@ legal-information question about the same crime:
 
 A purely educational framing ("what does the law say about...",
 impersonal, non-urgent) keeps heavy subject words on the normal path,
-and an explicitly historical account ("...years ago", with no immediacy
-marker) is answered with the law rather than a redirect -- immediacy
-always defeats the historical reading, never the reverse. Emergency
+and an explicitly historical account of the asker's own victimisation
+("my husband used to beat me years ago", "there was a thief in my house
+yesterday") routes to the `serious` adviser tier rather than to a
+helpline -- immediacy always defeats the historical reading, never the
+reverse. Emergency
 messages are fixed configuration text naming only official national
 helplines (112, 181, 1098, 1930); nothing is generated or invented.
 

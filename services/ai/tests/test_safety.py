@@ -51,6 +51,12 @@ NORMAL_QUERIES = [
     "What is a Zero FIR?",
     "What protections does the Protection of Women from Domestic Violence Act give?",
     "What is a Child Welfare Committee?",
+    # Crime words in educational or hypothetical framings must stay on
+    # the normal path even now that past personal incidents route to
+    # the adviser tier.
+    "How is burglary defined?",
+    "What should I do if my house is broken into?",
+    "What should I do if someone committed theft yesterday?",
 ]
 
 
@@ -104,6 +110,21 @@ SERIOUS_QUERIES = [
     "I am being investigated by the police.",
     "My FIR is pending, what next?",
     "The police raided my house this morning.",
+    # Past personal victimisation: the asker describing a serious
+    # incident that already happened to them. Not an emergency (nothing
+    # is happening now), not a textbook question (it is their own
+    # matter) -- the adviser tier is the right route. "there was a thief
+    # in my house yesterday" used to fall through to plain retrieval.
+    "There was a thief in my house yesterday",
+    "My husband used to beat me years ago",
+    "my wife used to hit me",
+    "I was robbed last month",
+    "I was attacked yesterday",
+    "we were assaulted on the street last week",
+    "my house was broken into",
+    "our shop was burgled",
+    "my phone was stolen",
+    "he hit me last year, what are my options?",
 ]
 
 
@@ -574,19 +595,39 @@ def test_learning_about_these_offences_stays_educational(text):
 # their options are about abuse that ended years ago was handed a
 # helpline instead of the law on protection and residence orders.
 
-HISTORICAL_NOT_EMERGENCY = [
+# A settled account of the asker's own victimisation is not an
+# emergency -- but it is not a textbook question either. It routes to
+# the serious/adviser tier: the caution and legal-aid route lead, and
+# the law still follows behind the confidence gate (blocks_retrieval
+# stays False), so the person gets both the right framing and the law.
+HISTORICAL_OWN_VICTIMISATION_NOW_SERIOUS = [
     "my husband used to beat me years ago, what are my options",
     "he used to hit me years ago, what are my options",
     "my child was kidnapped in 2019 and the case is still going on",
-    "i was threatened back in 2018, can I still file a complaint",
     "he abused me when I was a child, what can I do now",
+]
+
+# Historical accounts with no life-threatening subject of the asker's
+# own stay on the normal path exactly as before.
+HISTORICAL_STILL_NORMAL = [
+    "i was threatened back in 2018, can I still file a complaint",
     "money was taken from my account in 2019, is it too late to complain",
     "my husband no longer lives with me, can I still get a protection order",
 ]
 
 
-@pytest.mark.parametrize("text", HISTORICAL_NOT_EMERGENCY)
-def test_a_settled_account_routes_to_the_law_not_a_helpline(text):
+@pytest.mark.parametrize("text", HISTORICAL_OWN_VICTIMISATION_NOW_SERIOUS)
+def test_a_settled_account_of_own_victimisation_routes_to_the_adviser_tier(text):
+    assessment = assess_query(text)
+    assert assessment.severity == SEVERITY_SERIOUS, text
+    # Never a helpline redirect, and never a hard stop: the law on the
+    # topic is still shown behind the same confidence gate.
+    assert assessment.blocks_retrieval is False
+    assert assessment.authority_guidance is True
+
+
+@pytest.mark.parametrize("text", HISTORICAL_STILL_NORMAL)
+def test_a_settled_account_without_own_victimisation_stays_normal(text):
     assert assess_query(text).severity == SEVERITY_NORMAL, text
 
 

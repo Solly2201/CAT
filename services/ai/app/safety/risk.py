@@ -402,6 +402,41 @@ _SERIOUS_LEGAL_SUBJECTS = _compile([
     r"\bpolice arrested (me|us|my \w+)\b",
 ])
 
+# A serious incident the person experienced, described as over: a past
+# burglary, a past robbery or assault, stolen property. Not an
+# emergency -- nothing is happening now -- but not an ordinary
+# educational query either: the person is describing their own matter,
+# and the right response is the serious-tier one (the caution and the
+# legal-aid route lead, the general law follows behind the confidence
+# gate), not a plain legal answer. Measured motivating case: "there was
+# a thief in my house yesterday" graded normal and went straight to
+# ordinary retrieval.
+#
+# First-person and own-property phrasings only. A third-party report
+# ("my friend was assaulted") or a hypothetical ("what should I do if
+# someone committed theft") stays on the normal path.
+_PAST_PERSONAL_INCIDENT_SUBJECTS = _compile([
+    # The past-tense mirror of _HOME_INTRUSION_SUBJECTS: "there WAS a
+    # thief in my house" is a burglary report, not a live intrusion.
+    r"\bthere (was|were|had been)\b[^.?!]{0,30}"
+    r"\b(thief|thieves|intruder|burglar|robber|stranger)\b"
+    r"[^.?!]{0,25}\b(in|inside) (my|our) (house|home|flat|apartment|room|"
+    r"compound|shop|office)\b",
+    r"\b(my|our) (house|home|flat|apartment|room|shop|office)\b[^.?!]{0,15}"
+    r"\b(was|were|got|has been|had been) "
+    r"(burgled|burglarised|burglarized|robbed|broken into|ransacked|looted)\b",
+    # The speaker as past victim: "I was robbed last month", "we were
+    # attacked". The present-progressive forms of the same verbs are
+    # emergencies and are caught first, above.
+    r"\b(i|we) (was|were|got|have been|had been) "
+    r"(robbed|burgled|mugged|attacked|assaulted|beaten( up)?|stabbed|"
+    r"held at (knife|gun) ?point)\b",
+    # Personal property stolen: past theft affecting the person directly.
+    r"\b(my|our) (phone|mobile|car|bike|scooter|motorcycle|vehicle|wallet|"
+    r"purse|bag|laptop|jewellery|jewelry|gold|money) "
+    r"(was|were|got|has been|had been) (stolen|snatched|robbed|taken)\b",
+])
+
 # A possessive reference to one's own legal matter, split out of
 # _SERIOUS_LEGAL_SUBJECTS above because it behaves differently from
 # every other member of that group.
@@ -690,6 +725,8 @@ def _serious_legal_subject(text: str) -> bool:
     """
     if _any(_SERIOUS_LEGAL_SUBJECTS, text):
         return True
+    if _any(_PAST_PERSONAL_INCIDENT_SUBJECTS, text):
+        return True
     if not _any(_OWN_LEGAL_MATTER, text):
         return False
     return not (_any(_ENTITLEMENT_FRAME, text) or _any(_BRIBE_SOLICITATION, text))
@@ -869,6 +906,26 @@ def assess_query(text: str) -> SafetyAssessment:
             severity=SEVERITY_EMERGENCY,
             category="cyber_fraud",
             message=EMERGENCY_CONTACTS["cyber_fraud"],
+            authority_guidance=True,
+        )
+
+    # An emergency-tier subject stood down ONLY by the historical frame
+    # is still the asker's own serious matter. "My husband used to beat
+    # me years ago" is rightly not an emergency, but routing it to plain
+    # retrieval treated it as a textbook question -- the person gets the
+    # serious-tier response instead: the caution and the legal-aid route
+    # lead, and the law on the topic follows behind the same gate.
+    # Immediacy already defeated the historical reading above, so
+    # nothing live can reach this branch.
+    if (
+        historical
+        and not educational
+        and (_life_threatening_subject(text) or _any(_DOMESTIC_ABUSE_SUBJECTS, text))
+    ):
+        return SafetyAssessment(
+            severity=SEVERITY_SERIOUS,
+            category="serious_legal_matter",
+            message=SERIOUS_MATTER_MESSAGE,
             authority_guidance=True,
         )
 
