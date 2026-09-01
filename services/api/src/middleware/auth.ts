@@ -33,7 +33,9 @@ export const requireAuth = (request: Request, response: Response, next: NextFunc
 export const requireRole = (...roles: UserRole[]) =>
   (request: Request, response: Response, next: NextFunction) => {
     if (!request.auth) return response.status(401).json({ message: "Authentication is required." });
-    if (!roles.includes(request.auth.role)) return response.status(403).json({ message: "You do not have access to this resource." });
+    if (!roles.includes(request.auth.role)) {
+      return response.status(403).json({ message: "You do not have access to this resource." });
+    }
     return next();
   };
 

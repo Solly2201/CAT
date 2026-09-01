@@ -4,7 +4,6 @@ held-out test split, to distinguish 'nothing changed' from 'offsetting
 gains and losses' when the aggregate recall@5 is unchanged."""
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import sys

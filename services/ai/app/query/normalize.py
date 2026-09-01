@@ -86,6 +86,8 @@ from __future__ import annotations
 
 import re
 
+from .spelling import spelling_corrections
+
 #: Ceiling on appended expansions per query. Set from the measurement
 #: above: appended vocabulary helps at one or two additions and hurts as
 #: it accumulates.
@@ -596,8 +598,6 @@ def normalize_for_retrieval(query: str) -> str:
     classified by the safety policy, and never reaches answer
     construction.
     """
-    from .spelling import spelling_corrections
-
     corrections = spelling_corrections(query)
     corrected = query + " " + " ".join(corrections) if corrections else query
     terms = normalization_terms(corrected)

@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field
 
 from .generation.disclaimer import DISCLAIMER_TEXT, DISCLAIMER_VERSION
 from .generation.pipeline import handle_legal_query
-from .query.context import ConversationContext
 from .ingestion.sources import APPROVED_SOURCES
+from .query.context import ConversationContext
 from .retrieval.search import get_section, search
 
 logger = logging.getLogger("cap-ai")

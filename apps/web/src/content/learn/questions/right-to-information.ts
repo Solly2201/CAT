@@ -9,7 +9,6 @@ import type { QuizQuestion } from "../types";
  * tenure (ss.13/16/27, excluded as pre-2019 text).
  */
 export const rightToInformationQuestions: QuizQuestion[] = [
-  // --- what-is-the-right-to-information ---
   {
     id: "rti-what-1",
     articleSlug: "what-is-the-right-to-information",
@@ -61,7 +60,6 @@ export const rightToInformationQuestions: QuizQuestion[] = [
       "Section 24's first proviso says information pertaining to allegations of corruption is not excluded. Information about alleged human rights violations may also be provided, with the approval of the Central Information Commission.",
     citation: { sourceId: "rti", unitNumber: "24", label: "Right to Information Act, 2005, Section 24" }
   },
-  // --- what-public-authorities-must-publish ---
   {
     id: "rti-publish-1",
     articleSlug: "what-public-authorities-must-publish",
@@ -111,7 +109,6 @@ export const rightToInformationQuestions: QuizQuestion[] = [
       "Section 5 requires every public authority to designate as many officers as Central or State Public Information Officers, in all administrative units or offices, as are necessary to provide information to those requesting it.",
     citation: { sourceId: "rti", unitNumber: "5", label: "Right to Information Act, 2005, Section 5" }
   },
-  // --- how-to-make-an-rti-request ---
   {
     id: "rti-request-1",
     articleSlug: "how-to-make-an-rti-request",
@@ -180,7 +177,6 @@ export const rightToInformationQuestions: QuizQuestion[] = [
       "The proviso to section 6(1) requires the Public Information Officer to render all reasonable assistance to a person making the request orally, to reduce it to writing.",
     citation: { sourceId: "rti", unitNumber: "6", label: "Right to Information Act, 2005, Section 6" }
   },
-  // --- how-long-an-rti-reply-takes ---
   {
     id: "rti-time-1",
     articleSlug: "how-long-an-rti-reply-takes",
@@ -249,7 +245,6 @@ export const rightToInformationQuestions: QuizQuestion[] = [
       "Section 7(6) requires that the person be provided the information free of charge where the public authority fails to comply with the time limits specified in section 7(1).",
     citation: { sourceId: "rti", unitNumber: "7", label: "Right to Information Act, 2005, Section 7" }
   },
-  // --- information-that-can-be-refused ---
   {
     id: "rti-exempt-1",
     articleSlug: "information-that-can-be-refused",
@@ -301,7 +296,6 @@ export const rightToInformationQuestions: QuizQuestion[] = [
       "Section 9 lets the officer reject a request where providing access would involve infringement of copyright subsisting in a person other than the State.",
     citation: { sourceId: "rti", unitNumber: "9", label: "Right to Information Act, 2005, Section 9" }
   },
-  // --- partial-access-and-third-party-information ---
   {
     id: "rti-partial-1",
     articleSlug: "partial-access-and-third-party-information",
@@ -351,7 +345,6 @@ export const rightToInformationQuestions: QuizQuestion[] = [
       "Section 11 requires the officer, within five days of receiving the request, to give the third party written notice of the request and of the intention to disclose, and to invite that party's submission.",
     citation: { sourceId: "rti", unitNumber: "11", label: "Right to Information Act, 2005, Section 11" }
   },
-  // --- appealing-an-rti-refusal ---
   {
     id: "rti-appeal-1",
     articleSlug: "appealing-an-rti-refusal",
@@ -418,7 +411,6 @@ export const rightToInformationQuestions: QuizQuestion[] = [
       "The proviso to section 19(1) lets the appellate officer admit a late appeal if satisfied that the appellant was prevented by sufficient cause from filing in time.",
     citation: { sourceId: "rti", unitNumber: "19", label: "Right to Information Act, 2005, Section 19" }
   },
-  // --- complaints-and-penalties-under-rti ---
   {
     id: "rti-penalty-1",
     articleSlug: "complaints-and-penalties-under-rti",

@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from .chunk import CHUNKERS
 from .clean import clean_extracted_text
 from .extract import extract_gazette_body_text, extract_gazette_titles, extract_pdf_text
-from .models import Chunk, SourceMeta
+from .models import Chunk
 from .sources import APPROVED_SOURCES, get_source
 
 

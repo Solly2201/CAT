@@ -15,13 +15,13 @@ from datetime import date
 class SourceMeta:
     """One approved legal source, mirroring docs/LEGAL_SOURCES.md."""
 
-    source_id: str            # short slug, e.g. "bnss"
-    display_name: str         # "Bharatiya Nagarik Suraksha Sanhita, 2023"
-    act_no: str                # "ACT NO. 46 OF 2023"
-    official_url: str         # India Code bitstream/handle URL
-    publisher: str             # "India Code / Ministry of Law and Justice"
-    as_on_date: str            # verification date printed on the source PDF
-    raw_path: str               # path to the raw text file under data/legal-corpus/<id>/
+    source_id: str        # short slug, e.g. "bnss"
+    display_name: str     # "Bharatiya Nagarik Suraksha Sanhita, 2023"
+    act_no: str           # "ACT NO. 46 OF 2023"
+    official_url: str     # India Code bitstream/handle URL
+    publisher: str        # "India Code / Ministry of Law and Justice"
+    as_on_date: str       # verification date printed on the source PDF
+    raw_path: str         # path to the raw text file under data/legal-corpus/<id>/
     unit_label: str = "Section"  # "Section" for the Sanhitas/Adhiniyam, "Article" for the Constitution
     chunk_style: str = "sanhita"  # "sanhita" | "constitution"
     extraction_mode: str = "plain"  # "plain" | "gazette_body" -- see extract.py's extract_gazette_body_text
@@ -40,7 +40,7 @@ class SourceMeta:
     # worse than not covering them at all. Recorded in the manifest so
     # the omission is visible rather than silent.
     exclude_units: tuple[str, ...] = ()
-    exclude_reason: str = ""   # why exclude_units were dropped, for the manifest
+    exclude_reason: str = ""  # why exclude_units were dropped, for the manifest
     # Corrections for section titles the source PDF mis-renders, as
     # ((unit_number, correct_title), ...). Titles are concatenated into
     # the indexed text (see index_build._index_text), so a garbled title
@@ -49,7 +49,7 @@ class SourceMeta:
     # damaged -- never to invent or paraphrase one, and never applied to
     # body text, which stays exactly as extracted.
     title_overrides: tuple[tuple[str, str], ...] = ()
-    coverage_note: str = ""    # honest note on what part of the source is ingested, if partial
+    coverage_note: str = ""  # honest note on what part of the source is ingested, if partial
     import_date: str = field(default_factory=lambda: date.today().isoformat())
 
 
@@ -57,11 +57,11 @@ class SourceMeta:
 class Chunk:
     """One retrievable unit of legal text -- one Section or Article."""
 
-    chunk_id: str          # "{source_id}:{unit_number}"
+    chunk_id: str    # "{source_id}:{unit_number}"
     source_id: str
-    unit_number: str        # "43" or "43(5)" for a specific subsection
-    title: str               # section/article title if the source provides one, else ""
-    text: str                 # the verbatim statutory text, cleaned of layout artifacts only
+    unit_number: str  # "43" or "43(5)" for a specific subsection
+    title: str        # section/article title if the source provides one, else ""
+    text: str         # the verbatim statutory text, cleaned of layout artifacts only
     part_or_chapter: str = ""  # e.g. "Chapter V — Arrest of Persons"
 
     def citation(self, source: SourceMeta) -> dict:

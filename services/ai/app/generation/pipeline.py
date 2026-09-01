@@ -26,11 +26,7 @@ from dataclasses import dataclass, field
 from ..query.context import CLARIFICATION_MESSAGE, ConversationContext, resolve_context
 from ..query.normalize import normalize_for_retrieval
 from ..retrieval.search import search as _search
-from ..safety.corpus_coverage import (
-    NOT_IN_CORPUS_MESSAGE,
-    classify_coverage_gap,
-    coverage_message,
-)
+from ..safety.corpus_coverage import classify_coverage_gap, coverage_message
 from ..safety.risk import (
     SEVERITY_EMERGENCY,
     SEVERITY_HARMFUL_REQUEST,

@@ -2,15 +2,14 @@ import crypto from "node:crypto";
 import type { DevVerification } from "@cap/contracts";
 import { env } from "../config/env.js";
 
-// Email verification without an email provider. A random token is issued
-// at registration, only its SHA-256 hash is persisted (models/user.ts),
-// and it expires after 24 hours.
+// Issues the email-verification challenge; delivery is lib/mailer.ts. A
+// random token is issued at registration, only its SHA-256 hash is
+// persisted (models/user.ts), and it expires after 24 hours.
 //
 // Outside production the raw token is returned in the API response so the
-// flow is completable locally. That is a development affordance, not a
-// hole: devVerification() returns undefined when NODE_ENV is production,
-// so a deployed instance never leaks a token. Wiring a real transport
-// later means mailing token from the register/resend handlers.
+// flow is completable locally, with or without SMTP configured. That is a
+// development affordance, not a hole: devVerification() returns undefined
+// when NODE_ENV is production, so a deployed instance never leaks a token.
 
 export const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 

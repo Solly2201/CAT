@@ -15,7 +15,7 @@ different question: "this *is* a legal question, in this service's own
 subject area -- but is the Act it asks about actually in the corpus?"
 The two need different user-facing messages. Telling someone with a
 POCSO question to try india.gov.in would be unhelpful and slightly
-insulting; telling them plainly that this service only holds nine
+insulting; telling them plainly that this service only holds ten
 specific India Code sources, and that theirs is not one of them, is
 honest and actionable.
 

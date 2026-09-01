@@ -42,11 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // The interceptor fires only when a presented token was rejected —
-    // i.e. a session genuinely ended, as opposed to a failed login. The
-    // 15-minute token has no refresh endpoint, so this is the ordinary
-    // way a session ends and deserves to be said out loud on the login
-    // screen rather than looking like a fresh visit.
+    // The interceptor fires only once a presented token was rejected AND
+    // refresh could not renew it — i.e. the session genuinely ended
+    // (expiry or revocation), as opposed to a failed login. That is worth
+    // saying out loud on the login screen rather than letting it look
+    // like a fresh visit.
     setUnauthorizedHandler(() => {
       setUser(null);
       setStatus("anonymous");

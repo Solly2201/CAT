@@ -17,8 +17,6 @@ import json
 import os
 import sys
 
-import pytest
-
 HERE = os.path.dirname(__file__)
 EVAL_DIR = os.path.join(HERE, "..", "eval")
 sys.path.insert(0, os.path.join(HERE, ".."))

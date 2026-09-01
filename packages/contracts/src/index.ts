@@ -65,9 +65,10 @@ export type RefreshResponse = {
 };
 
 /**
- * Development-only verification handoff. With no email provider wired in,
- * the API returns the token in the response outside production; in
- * production this field is never populated.
+ * Development-only verification handoff. Outside production the API
+ * returns the token in the response, whether or not SMTP is configured,
+ * so the flow is completable locally; in production this field is never
+ * populated and delivery is by email only.
  */
 export type DevVerification = {
   token: string;
