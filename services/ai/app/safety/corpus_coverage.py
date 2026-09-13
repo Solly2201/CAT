@@ -191,6 +191,43 @@ _CATEGORY_PATTERNS: list[tuple[str, list[str]]] = [
         r"\bcode of civil procedure\b",
         r"\bcpc\b",
     ]),
+    # Minimum-wage questions. The Minimum Wages Act is not ingested, and
+    # this subject was originally left to the confidence gate after a
+    # probe showed the gate abstaining on it. The repeated-seed
+    # experiment then demonstrated that margin is not robust: one of
+    # five retrained seeds (seed 45) answered "what is the minimum wage
+    # for a construction worker" over the floor, from bns:146 (unlawful
+    # compulsory labour). One entry per demonstrated failure, as always;
+    # "minimum wage(s)" occurs zero times in the indexed corpus, so the
+    # bare phrase is safe. Other labour subjects stay with the gate --
+    # no seed run answered any of them.
+    ("minimum_wages", [
+        r"\bminimum wages?\b",
+    ]),
+    # An explicit request for case law. No judgment of any court is
+    # ingested -- the corpus is statute only -- but a judgment request
+    # shares heavy vocabulary with ingested text (the Constitution's
+    # Supreme Court chapter, BNSS's judgment-pronouncement provisions),
+    # so retrieval would otherwise answer it confidently with statutes
+    # the citizen did not ask for. Demonstrated by the revision's
+    # citation-audit probe "supreme court judgment on privacy", answered
+    # with five statutory excerpts. Patterns deliberately require the
+    # case-law framing itself ("case law", "precedent", a court name
+    # directly beside "judgment/ruling/verdict", or "judgment on
+    # <topic>") -- bare "judgment" is genuine BNSS/Constitution
+    # vocabulary ("when is judgment pronounced", "review of judgments")
+    # and must keep answering.
+    ("case_law", [
+        r"\bcase[- ]law\b",
+        r"\bprecedents?\b",
+        r"\b(supreme court|high court)\s+(judgments?|judgements?|"
+        r"rulings?|verdicts?)\b",
+        r"\b(landmark|recent|latest|famous)\s+(judgments?|judgements?|"
+        r"rulings?|cases?|verdicts?)\b",
+        r"\b(judgments?|judgements?|rulings?|verdicts?)\s+(on|about|"
+        r"regarding)\b",
+        r"\bcourt\s+(has\s+)?rule[ds]?\s+(on|about|that)\b",
+    ]),
 ]
 
 # ---------------------------------------------------------------------
@@ -466,11 +503,30 @@ EXCLUDED_PROVISION_MESSAGE = (
 #: an Act this project does not hold at all.
 EXCLUDED_PROVISION_CATEGORIES = {"rti_amended_service_provisions"}
 
+# A third kind of gap, again with its own honest message: the citizen is
+# asking for a court's decision, and this corpus holds no judgment of
+# any court -- by design, not omission. Quoting a statute in reply would
+# look responsive while answering a different question.
+CASE_LAW_MESSAGE = (
+    "This looks like a question about a court judgment or case law. I "
+    "hold verified statutory text only -- no judgment of any court is in "
+    "my corpus -- so rather than quote you a statute as if it were the "
+    "ruling you asked about, I'd rather say I can't answer this. Supreme "
+    "Court judgments are published at sci.gov.in and other courts' "
+    "decisions through the eCourts services; for free legal help, "
+    "contact Tele-Law or Nyaya Bandhu."
+)
+
+#: Categories answered with CASE_LAW_MESSAGE.
+CASE_LAW_CATEGORIES = {"case_law"}
+
 
 def coverage_message(category: str) -> str:
     """The message that matches the kind of gap `category` describes."""
     if category in EXCLUDED_PROVISION_CATEGORIES:
         return EXCLUDED_PROVISION_MESSAGE
+    if category in CASE_LAW_CATEGORIES:
+        return CASE_LAW_MESSAGE
     return NOT_IN_CORPUS_MESSAGE
 
 

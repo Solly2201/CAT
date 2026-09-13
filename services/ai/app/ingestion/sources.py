@@ -45,15 +45,39 @@ APPROVED_SOURCES: dict[str, SourceMeta] = {
         unit_label="Section",
         chunk_style="sanhita",
         chunk_start_marker="BE it enacted",
+        # Two headers the general pattern cannot match in this PDF: both
+        # titles wrap across a line break (joined by cleaning into one
+        # long title with no full stop before the em-dash). Located by
+        # their full literal header text and split out, restoring each
+        # section's own chunk and citation.
+        section_splits=(
+            (
+                "216",
+                "217",
+                r"\n217\. False information, with intent to cause public "
+                r"servant to use his lawful power to injury of another "
+                r"person—",
+                "False information, with intent to cause public servant to "
+                "use his lawful power to injury of another person",
+            ),
+            (
+                "254",
+                "255",
+                r"\s255\.—Public servant disobeying direction of law "
+                r"with intent to save person from punishment or property "
+                r"from forfeiture \.—",
+                "Public servant disobeying direction of law with intent to "
+                "save person from punishment or property from forfeiture",
+            ),
+        ),
         coverage_note="Full text as supplied from a single-column 'bare Act' India Code PDF "
-                       "(replaced this session; the source is cleanly extractable, no two-column "
-                       "layout). Section titles are inline in the source text and recovered for "
-                       "356 of 358 sections (99.4%). Two sections (217, 255) are a known residual "
-                       "gap: the source PDF omits the line break between the previous section's "
-                       "final sentence and this section's opening number on that specific page, "
-                       "so their body text is currently appended to the preceding section's chunk "
-                       "rather than split out on its own -- a rare, isolated page-layout artifact, "
-                       "not a systematic problem (see docs/LEGAL_SOURCES.md).",
+                       "(the source is cleanly extractable, no two-column layout). Section "
+                       "titles are inline in the source text and recovered for all 358 "
+                       "sections. Two sections (217, 255) whose header titles wrap across a "
+                       "line break in the source PDF -- which the general section-header "
+                       "pattern cannot match -- are split out of the preceding section's "
+                       "chunk by a curated, asserted repair (see section_splits), so each "
+                       "carries its own citation (see docs/LEGAL_SOURCES.md).",
     ),
     "bnss": SourceMeta(
         source_id="bnss",
@@ -165,15 +189,37 @@ APPROVED_SOURCES: dict[str, SourceMeta] = {
         unit_label="Section",
         chunk_style="sanhita",
         chunk_start_marker="BE it enacted",
-        coverage_note="Full text as supplied from a single-column 'bare Act' India Code PDF "
-                       "(replaced this session). Section titles are inline in the source text "
-                       "and recovered for 110 of 112 sections (98.2%) -- the old two-column "
-                       "source's ~40% title coverage is resolved by this replacement. Two "
-                       "sections (61, 86) are a known residual gap: the source PDF marks their "
-                       "opening number with an amendment-substitution footnote bracket "
-                       "(e.g. \"1[86 Classification...\") that the chunker doesn't yet parse as "
-                       "a section boundary, so their body text is currently appended to the "
-                       "preceding section's chunk rather than split out on its own (see "
+        # Two headers the general pattern cannot match in this PDF: the
+        # 2021 amendment substituted both sections, so the source marks
+        # their opening with a footnote bracket ("61. 2[Procedure...]",
+        # "1[86 Classification..." -- s.86's even lacks the dot after
+        # the number). Located by their full literal header text and
+        # split out, restoring each section's own chunk and citation.
+        section_splits=(
+            (
+                "60",
+                "61",
+                r"\n61\. 2\[Procedure for disposal of adoption "
+                r"proceedings\] \.—",
+                "Procedure for disposal of adoption proceedings",
+            ),
+            (
+                "85",
+                "86",
+                r"\s1\[86 Classification of offences and designated "
+                r"court \.—\s*",
+                "Classification of offences and designated court",
+            ),
+        ),
+        coverage_note="Full text as supplied from a single-column 'bare Act' India Code PDF. "
+                       "Section titles are inline in the source text and recovered for all 112 "
+                       "sections -- the old two-column source's ~40% title coverage is resolved "
+                       "by this replacement. Two sections (61, 86) that the 2021 amendment "
+                       "substituted -- so the source PDF marks their opening number with an "
+                       "amendment-substitution footnote bracket (e.g. \"1[86 Classification...\") "
+                       "the general section-header pattern cannot match -- are split out of the "
+                       "preceding section's chunk by a curated, asserted repair (see "
+                       "section_splits), so each carries its own citation (see "
                        "docs/LEGAL_SOURCES.md). Covers children in conflict with law (Juvenile "
                        "Justice Boards), children in need of care and protection (Child Welfare "
                        "Committees), and offences against children.",
@@ -204,6 +250,25 @@ APPROVED_SOURCES: dict[str, SourceMeta] = {
         title_overrides=(
             ("3", "Right to information"),
             ("18", "Powers and functions of Information Commissions"),
+        ),
+        # The CIC PDF's OCR omits the full stop before s.14's em-dash
+        # ("...or Information Commissioner—CO Subject to..."), so the
+        # general header pattern cannot match it and s.14's text lands
+        # inside s.13's chunk -- which is excluded below, silently
+        # dropping s.14 with it. Split out here (splits run before
+        # exclusions), restoring the unamended removal provision. Its
+        # first sub-section marker OCRs as "CO" (for "(1)") and is left
+        # exactly as extracted, per this source's documented policy of
+        # never rewriting ambiguous OCR marks.
+        section_splits=(
+            (
+                "13",
+                "14",
+                r"\n14\. Removal of Chief Information Commissioner or "
+                r"Information Commissioner—",
+                "Removal of Chief Information Commissioner or Information "
+                "Commissioner",
+            ),
         ),
         exclude_units=("13", "16", "25", "27"),
         exclude_reason=(
@@ -244,13 +309,10 @@ APPROVED_SOURCES: dict[str, SourceMeta] = {
             "severability rules (ss.8-10), third-party information (s.11), "
             "the Information Commissions' powers (s.18), first and second "
             "appeals (s.19) and penalties for a Public Information Officer "
-            "(s.20). Two known residual gaps: s.14 (removal of the Chief "
-            "Information Commissioner) is not chunked because the source "
-            "omits the full stop before the em-dash that the section-header "
-            "pattern requires, and s.3's title extracts as 'Ftight to "
-            "information' -- both are OCR defects in the published PDF, "
-            "neither affects a citizen-facing provision's body text. A third "
-            "OCR defect is left deliberately unrepaired: the published PDF "
+            "(s.20), and the removal provision (s.14, unamended by the 2019 "
+            "Act, recovered by a curated header repair -- see "
+            "section_splits; its '(1)' marker OCRs as 'CO' and is left as "
+            "extracted). One OCR defect is left deliberately unrepaired: the published PDF "
             "renders 48 bracketed markers as '(/)'. These are NOT all the "
             "same character. Most are sub-section '(1)', but in s.2 the same "
             "glyph stands for the definition clause '(l)' (lower-case L, as "

@@ -27,6 +27,66 @@
 > **Part A wins** — Part B is preserved as the historical record of how
 > the project got here, not as a statement of current fact.
 
+## 0. ICCSDI 2026 revision update (post-freeze, authoritative deltas)
+
+The ICCSDI 2026 minor revision made four bounded changes on top of the
+frozen state plus the two post-freeze safety-routing commits
+(`dce6304`, `951edaf`). Where a number below differs from the frozen
+Part A sections, **this section wins**.
+
+1. **Extraction defects fixed (corpus 1,827 → 1,832 chunks).** The five
+   documented defects — BNS 217/255 and JJ Act 61/86 merged into the
+   preceding chunk (wrong citation attribution), and RTI s.14 dropped
+   entirely inside the excluded s.13 — are repaired by curated,
+   asserted `SourceMeta.section_splits`
+   (`app/ingestion/chunk.py::apply_section_splits`), the same idiom as
+   `title_overrides`/`exclude_units`; the general header pattern is
+   untouched. Regression tests: `tests/test_section_splits.py`. See
+   `docs/LEGAL_SOURCES.md` "Curated section-split repairs".
+2. **Case-law coverage guard.** A citation-audit probe ("supreme court
+   judgment on privacy") was answered with statutes; the corpus holds
+   no judgments, so `corpus_coverage.py` gained a narrow `case_law`
+   category with its own message (`CASE_LAW_MESSAGE`), verified not to
+   fire on any of the 362 labelled answer-expected queries.
+3. **Full re-evaluation on the corrected corpus** (production path,
+   `finetune/eval_seeds.py`; artifacts in
+   `finetune/output/revision_eval/`). The corpus correction changed no
+   headline metric on either model. The post-freeze safety refinement
+   moved exactly one benchmark row (h017, "my neighbor broke into my
+   house at night", now emergency-routed as an active crime), so false
+   abstains are 46 base / 25 fine-tuned on citizen-281 (was 45/24) and
+   11/8 on the held-out 41 (was 10/7); abstention accuracy 0.8530 →
+   0.9201 (deployed citizen) and 0.7317 → 0.8049 (held-out). All other
+   Part A section 5/6 numbers reproduce exactly on the corrected
+   corpus: citizen recall@5 0.7448 → 0.9554, MRR 0.5656 → 0.8800,
+   top-1 0.4448 → 0.8185, wrong-Act 43 → 19, hard-negative 28/29 →
+   29/29, held-out recall@5 0.7634 → 0.8732 / MRR 0.5687 → 0.7122 /
+   top-1 0.4634 → 0.6098; control set unchanged. Zero false accepts
+   everywhere. Follow-up benchmark unchanged (19/21, 4/4, 4/4, 6/6,
+   2/2, 2/3). Fresh scripted citation audit
+   (`eval/audit_citations.py`): 26 probes, 95 excerpts, zero defects,
+   including the five recovered sections.
+4. **Repeated-seed stability experiment**
+   (`finetune/run_seed_experiment.py`): seeds 42–46, identical
+   corpus/splits/hyperparameters/protocol, only the seed varies;
+   per-seed production-path results in
+   `finetune/output/seed<N>_rev/seed_eval.json`. Held-out citizen 41:
+   recall@5 0.8634 ± 0.0134 (range 0.8488–0.8732), MRR 0.7170 ± 0.0214,
+   top-1 0.6244 ± 0.0408, abstention 0.7805 ± 0.0345; hard-negative
+   29/29 on all five seeds; deployed wrong-Act 16–19 (base 43); the
+   retrained seed-42 run reproduces the promoted model's numbers
+   exactly. One seed (45) produced the sweep's only false accept —
+   h293, "what is the minimum wage for a construction worker",
+   answered from `bns:146` over the gate floor — which moved the
+   minimum-wage subject into the coverage guard (`minimum_wages`
+   category, metric-neutral for the promoted model, regression-tested).
+   Full summary in `docs/RETRIEVAL_EVALUATION.md` "Repeated-seed
+   results" and the revision report alongside the paper.
+
+Python test count after the revision: **433 passed** (the frozen 369
+grew with the post-freeze safety tests and the revision's regression
+tests); API 318 and web 278 unchanged.
+
 ## 1. Final frozen state
 
 | | |

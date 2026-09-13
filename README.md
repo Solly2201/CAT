@@ -194,17 +194,20 @@ words.
 
 ## 5. Final corpus and final model
 
-**Corpus -- 10 official Acts, 1,827 chunks** (counted from
-`services/ai/data/index/chunk_manifest.jsonl`):
+**Corpus -- 10 official Acts, 1,832 chunks** (counted from
+`services/ai/data/index/chunk_manifest.jsonl`; the ICCSDI 2026 revision
+recovered five previously mis-attributed or dropped sections -- BNS
+217/255, JJ Act 61/86, RTI s.14 -- see `docs/LEGAL_SOURCES.md`,
+"Curated section-split repairs"):
 
 | Source | Chunks | Source | Chunks |
 | --- | ---: | --- | ---: |
-| Bharatiya Nagarik Suraksha Sanhita, 2023 | 531 | Juvenile Justice Act, 2015 | 110 |
+| Bharatiya Nagarik Suraksha Sanhita, 2023 | 531 | Juvenile Justice Act, 2015 | 112 |
 | Constitution of India | 366 | Consumer Protection Act, 2019 | 107 |
-| Bharatiya Nyaya Sanhita, 2023 | 356 | Information Technology Act, 2000 | 92 |
+| Bharatiya Nyaya Sanhita, 2023 | 358 | Information Technology Act, 2000 | 92 |
 | Bharatiya Sakshya Adhiniyam, 2023 | 170 | Protection of Women from DV Act, 2005 | 37 |
 | | | Legal Services Authorities Act, 1987 | 32 |
-| | | Right to Information Act, 2005 | 26 |
+| | | Right to Information Act, 2005 | 27 |
 
 Coverage is deliberately partial and every gap is recorded -- see
 [docs/LEGAL_SOURCES.md](docs/LEGAL_SOURCES.md). CAT does **not** claim

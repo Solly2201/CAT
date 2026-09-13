@@ -1,8 +1,12 @@
 # Legal-source inventory (final)
 
-> **Final.** This inventory describes the corpus at the frozen commit
-> `c24eda2`: **10 ingested Acts, 1,827 chunks.** The per-source counts in
-> "Ingestion status" below are the final ones, verified against
+> **Final, updated by the ICCSDI 2026 revision.** This inventory
+> describes the corpus after the revision's curated section-split
+> repairs: **10 ingested Acts, 1,832 chunks.** The five chunks added
+> over the frozen commit `c24eda2` (1,827) are BNS 217/255, JJ Act
+> 61/86 and RTI s.14 — the previously documented extraction defects,
+> now fixed (see "Curated section-split repairs" below). The per-source
+> counts in "Ingestion status" below are verified against
 > `services/ai/data/index/chunk_manifest.jsonl`.
 
 CAT accepts legal RAG evidence only from an Admin-approved official-source allow-list. Every imported document must retain its official URL, publisher, document version or “as on” date, import date, checksum, and extraction status.
@@ -28,11 +32,11 @@ The corpus is deliberately limited, and it stayed limited. **CAT does not claim 
 
 > **Correction (Increment 2):** the BNSS PDF originally supplied for ingestion was *"AS INTRODUCED IN LOK SABHA"* (Bill No. 122 of 2023) — a superseded draft, not the enacted Sanhita. Section numbering and text differ from the enacted Act No. 46 of 2023. It has been replaced with the official India Code text above. The BNS and Constitution PDFs supplied were verified as the actual enacted/official text and did not need replacing.
 
-## Ingestion status (final — 10 sources, 1,827 chunks)
+## Ingestion status (final — 10 sources, 1,832 chunks)
 
 Run `python services/ai/scripts/ingest_corpus.py` to regenerate the index
 from source. The counts below are the **final** ones and match
-`data/index/index_manifest.json` (`chunk_count: 1827`) and a per-source
+`data/index/index_manifest.json` (`chunk_count: 1832`) and a per-source
 count over `chunk_manifest.jsonl`. The narrative in each row records how
 that source reached its final state, so some of it reads historically;
 the numbers do not.
@@ -41,15 +45,15 @@ the numbers do not.
 | --- | --- | --- |
 | Constitution | 366 articles | Full text supplied. Marginal-note article titles are not reliably extracted for most articles (two-column PDF layout, see below); a small hand-verified table recovers titles for Part III (Fundamental Rights, Articles 12-22). Article numbers and body text are exact throughout. |
 | Bharatiya Nagarik Suraksha Sanhita | 531 sections | **Full**, including Ch. XIII investigation/FIR (ss.173-196) and Ch. XXXV bail and bonds (ss.478-496). Replaced with a single-column "bare Act" India Code PDF (see "New single-column PDFs" below); section titles are inline in the source text and recovered for all 531 sections (100%). |
-| Bharatiya Nyaya Sanhita | 356 sections | **Full**, single-column source, titles recovered for 356 of 358 sections (99.4%) — see "New single-column PDFs" for the two-section residual gap. |
+| Bharatiya Nyaya Sanhita | 358 sections | **Full**, single-column source, titles recovered for all 358 sections. Two sections (217, 255) whose header titles wrap across a line break are split out by a curated, asserted repair — see "Curated section-split repairs" below. |
 | Bharatiya Sakshya Adhiniyam | 170 sections | **Full**, single-column source, titles recovered for all 170 sections (100%). |
 | Information Technology Act, 2000 | 92 sections | Full text as supplied. |
 | Protection of Women from Domestic Violence Act, 2005 | 37 sections | Full text as supplied. |
 | Legal Services Authorities Act, 1987 | 32 sections | Full text as supplied. |
 | Consumer Protection Act, 2019 | 107 sections | **Full**, single-column source, titles recovered for all 107 sections (100%). |
-| Juvenile Justice (Care and Protection of Children) Act, 2015 | 110 sections | **Full**, single-column source, titles recovered for 110 of 112 sections (98.2%) — see "New single-column PDFs" for the two-section residual gap. |
-| Right to Information Act, 2005 | 26 sections | Chapters I–VI from the Central Information Commission's published copy, excluding the Schedules. Four sections are deliberately excluded: **ss.13, 16 and 27**, which the RTI (Amendment) Act 2019 replaced and which this pre-2019 copy still states in superseded form, and **s.25** (Monitoring and reporting), dropped for measured retrieval harm — see below. s.14 is not chunked (the source omits the full stop before the em-dash the section-header pattern needs). |
-| **Total** | **1,827 chunks** | 10 ingested Acts. Verified against `data/index/chunk_manifest.jsonl`: bnss 531, constitution 366, bns 356, bsa 170, jj2015 110, cpa2019 107, it_act 92, pwdva 37, lsa 32, rti 26. |
+| Juvenile Justice (Care and Protection of Children) Act, 2015 | 112 sections | **Full**, single-column source, titles recovered for all 112 sections. Two amendment-substituted sections (61, 86) whose headers open with a footnote bracket are split out by a curated, asserted repair — see "Curated section-split repairs" below. |
+| Right to Information Act, 2005 | 27 sections | Chapters I–VI from the Central Information Commission's published copy, excluding the Schedules. Four sections are deliberately excluded: **ss.13, 16 and 27**, which the RTI (Amendment) Act 2019 replaced and which this pre-2019 copy still states in superseded form, and **s.25** (Monitoring and reporting), dropped for measured retrieval harm — see below. s.14 (unamended by the 2019 Act) is recovered by a curated split repair — the source omits the full stop before the em-dash the header pattern needs, and its text previously vanished inside the excluded s.13's chunk; its "(1)" marker OCRs as "CO" and is left as extracted. |
+| **Total** | **1,832 chunks** | 10 ingested Acts. Verified against `data/index/chunk_manifest.jsonl`: bnss 531, constitution 366, bns 358, bsa 170, jj2015 112, cpa2019 107, it_act 92, pwdva 37, lsa 32, rti 27. |
 
 ### Deferred and unsupported domains
 
@@ -86,7 +90,7 @@ told the gap exists rather than left to infer it.
 
 | Domain | Why it is not covered |
 | --- | --- |
-| Workplace and labour rights (including minimum wages, notice periods) | No labour legislation is ingested. |
+| Workplace and labour rights (notice periods and other terms) | No labour legislation is ingested. Minimum-wage questions moved to the coverage guard (`minimum_wages`) after the ICCSDI revision's repeated-seed experiment showed the gate margin is not seed-robust: one of five retrained seeds answered a minimum-wage query from `bns:146` over the floor. |
 | Tenancy and rent control | Governed by State legislation outside the ingested corpus. |
 | Data protection | India's dedicated data-protection legislation is not ingested, and ss.43 and 43A are missing from the ingested IT Act PDF. |
 | Stamp duty, arbitration, municipal services | Not ingested. |
@@ -133,27 +137,34 @@ Both changes were verified to produce byte-identical chunk counts for
 the four already-ingested sources that share this chunker
 (`it_act`/`pwdva`/`lsa`/`constitution`) before and after.
 
-**Known residual limitation, narrow and explicitly accepted, not
-silently hidden:** four sections across two sources -- BNS 217 and 255,
-JJ Act 61 and 86 -- have a page-layout quirk the chunker doesn't yet
-parse as a section boundary (BNS: the source PDF omits the line break
-between the previous section's last sentence and this section's
-opening number on that specific page; JJ Act: the section's opening
-number sits inside an amendment-substitution footnote bracket, e.g.
-`"1[86 Classification of offences..."`, with no plain `"86."` header
-for the parser to match). In both cases the affected section's real
-body text is still present in the corpus verbatim, but merged onto the
-end of the *preceding* section's chunk rather than split out under its
-own number -- a citation-accuracy defect for those 4 sections
-specifically (a citizen citing that preceding section's number would
-see the next section's text attributed to it too), not a content-loss
-one. Two narrower regex relaxations were tried and reverted after they
-introduced new false-positive header matches elsewhere in the corpus
-(duplicate/spurious chunks in bns/bnss/bsa/jj2015) -- not worth the
-risk for 4 of 1,274 sections (99.7% clean) when the alternative is
-documenting the gap, the same trade-off this project already accepted
-for the old BNSS 337/338 artifact. Extend the parser only if a future
-evaluation query specifically needs one of these four sections.
+### Curated section-split repairs (ICCSDI 2026 revision)
+
+The four sections the paragraph above's earlier version recorded as a
+"known residual limitation" -- BNS 217 and 255 (header titles wrapped
+across a line break, no full stop before the em-dash), JJ Act 61 and 86
+(the 2021 amendment substituted both, so the source opens them with a
+footnote bracket, e.g. `"1[86 Classification of offences..."`, s.86's
+even lacking the dot after its number) -- plus RTI s.14 (OCR omits the
+full stop before the em-dash; its text previously sat inside the
+excluded s.13's chunk and was therefore dropped from the corpus
+entirely) are now **fixed by curated, per-source split repairs**
+(`SourceMeta.section_splits`, applied by
+`app/ingestion/chunk.py::apply_section_splits`).
+
+Each repair names the host chunk, the new unit, the section's full
+literal header text as a pattern, and the title, and every failure mode
+raises at ingestion rather than degrading: a missing host, an
+already-produced unit, or a pattern that doesn't match exactly once
+means the source changed and the repair is stale. The only text removed
+from a body is the header itself (number + title) -- exactly what
+`chunk_sanhita` strips for every regularly-parsed section -- so body
+text stays verbatim. This is deliberately NOT a relaxation of the
+general `_SANHITA_HEADER` pattern: two narrower regex relaxations were
+tried in an earlier session and reverted after they introduced
+false-positive header matches elsewhere in the corpus, and a curated,
+asserted, per-defect repair (the same idiom as `title_overrides` and
+`exclude_units`) cannot regress any other source. Regression tests:
+`tests/test_section_splits.py`.
 
 ### Two-column gazette PDFs (historical; Constitution only, going forward)
 
@@ -205,8 +216,10 @@ cleaner single-column source PDFs exist for them (see above).
 ### Right to Information Act, 2005 — known limitations of the ingested copy
 
 The RTI Act is ingested from the Central Information Commission's own
-published copy, which is the file in the corpus folder. **26 sections are
-in the corpus; four are deliberately excluded and one is not chunked.**
+published copy, which is the file in the corpus folder. **27 sections are
+in the corpus; four are deliberately excluded** (s.14, previously lost
+inside the excluded s.13's chunk, is recovered by a curated split
+repair -- see "Curated section-split repairs" above).
 Three things about the source are worth recording, because each is a
 deliberate decision rather than an oversight.
 

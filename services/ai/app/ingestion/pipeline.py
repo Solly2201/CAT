@@ -18,7 +18,7 @@ import os
 from dataclasses import asdict
 from datetime import datetime, timezone
 
-from .chunk import CHUNKERS
+from .chunk import CHUNKERS, apply_section_splits
 from .clean import clean_extracted_text
 from .extract import extract_gazette_body_text, extract_gazette_titles, extract_pdf_text
 from .models import Chunk
@@ -83,6 +83,14 @@ def ingest_source(source_id: str) -> dict:
     if source.chunk_end_marker:
         kwargs["end_marker"] = source.chunk_end_marker
     chunks = chunker(source_id, cleaned, **kwargs)
+
+    # Split out sections whose headers the general pattern provably
+    # cannot match in this source (wrapped titles, amendment brackets,
+    # OCR-damaged punctuation). Runs before exclusions so a section
+    # merged into a later-excluded host (RTI s.14 inside s.13) is
+    # recovered rather than dropped with it.
+    if source.section_splits:
+        chunks = apply_section_splits(source_id, chunks, source.section_splits)
 
     # Restore titles the source PDF mis-rendered. Asserted, not assumed:
     # an override for a unit the chunker never produced, or one whose

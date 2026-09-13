@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.generation.pipeline import handle_legal_query  # noqa: E402
 from app.safety.corpus_coverage import (  # noqa: E402
+    CASE_LAW_MESSAGE,
     EXCLUDED_PROVISION_MESSAGE,
     NOT_IN_CORPUS_MESSAGE,
     classify_coverage_gap,
@@ -226,9 +227,20 @@ def test_guard_falls_through_silently_for_unrecognized_subjects():
     gate. Several un-ingested subjects are deliberately absent from the
     pattern list because the score gate already abstains on them."""
     for text in ("how much stamp duty do I pay to register a sale deed",
-                 "what is the minimum wage for a construction worker",
                  "can my landlord increase the rent whenever he wants"):
         assert classify_coverage_gap(text) is None, text
+
+
+def test_minimum_wage_is_caught_after_seed_sweep_evidence():
+    """Originally left to the confidence gate (a probe showed the gate
+    abstaining). The repeated-seed experiment showed that margin is not
+    robust: seed 45 answered this exact query from bns:146 over the
+    floor, so the subject moved from gate-reliant to guard-named -- the
+    guard's documented "add the rule when evaluation names the case"
+    discipline."""
+    assert classify_coverage_gap(
+        "what is the minimum wage for a construction worker"
+    ) == "minimum_wages"
 
 
 INGESTED_SOURCE_NAMES = [
@@ -404,4 +416,49 @@ def test_commission_questions_the_corpus_answers_are_not_blocked(text):
     """The guard keys on service *terms*, never on the Commissioner
     concept alone -- otherwise it would swallow everything the Act does
     say about the Commissions."""
+    assert classify_coverage_gap(text) is None, text
+
+
+# --- case-law requests: no judgment of any court is ingested --------------
+# Added for the ICCSDI 2026 revision after a citation-audit probe
+# ("supreme court judgment on privacy") was answered with five statutory
+# excerpts -- correct citations, wrong kind of law. The corpus is
+# statute-only by design, and a judgment request must say so rather than
+# look responsive with a statute.
+
+CASE_LAW_REQUESTS = [
+    "supreme court judgment on privacy",
+    "what did the supreme court rule about aadhaar",
+    "landmark judgments on freedom of speech",
+    "is there any case law on dowry harassment",
+    "high court ruling on bail conditions",
+    "what precedent applies to my situation",
+]
+
+# Bare "judgment" is genuine statutory vocabulary (BNSS judgment
+# pronouncement, Article 137 review of judgments) and must keep
+# answering -- the guard requires the case-law framing itself.
+JUDGMENT_QUESTIONS_THE_CORPUS_ANSWERS = [
+    "when is judgment pronounced in a criminal trial",
+    "can the supreme court review its own judgment",
+    "can I get a certified copy of the judgment in my case",
+    "what happens after the court delivers its judgment",
+]
+
+
+@pytest.mark.parametrize("text", CASE_LAW_REQUESTS)
+def test_case_law_requests_are_caught(text):
+    assert classify_coverage_gap(text) == "case_law", text
+
+
+def test_case_law_request_abstains_end_to_end_with_its_own_message():
+    answer = handle_legal_query("supreme court judgment on privacy")
+    assert answer.abstained
+    assert answer.reason == "not_in_corpus_case_law"
+    assert answer.message == CASE_LAW_MESSAGE
+    assert not answer.excerpts
+
+
+@pytest.mark.parametrize("text", JUDGMENT_QUESTIONS_THE_CORPUS_ANSWERS)
+def test_statutory_judgment_questions_are_not_blocked(text):
     assert classify_coverage_gap(text) is None, text

@@ -2280,3 +2280,99 @@ deployed configuration instead of downgrading it. Verified by running the
 full suite with the variable unset and checking the manifest and vectors
 afterwards. New unit tests for the path resolution:
 `tests/test_embeddings_config.py`.
+
+---
+
+## ICCSDI 2026 revision: corrected corpus, case-law guard, repeated seeds
+
+Everything in this section was produced for the ICCSDI 2026 minor
+revision, on top of the frozen M13 state plus the two post-freeze
+safety-routing commits. Artifacts live in
+`finetune/output/revision_eval/` and `finetune/output/seed<N>_rev/`.
+
+**Corrected corpus (1,827 → 1,832 chunks).** The five documented
+extraction defects (BNS 217/255 and JJ Act 61/86 merged into the
+preceding chunk; RTI s.14 dropped inside the excluded s.13) were fixed
+by curated, asserted `section_splits` repairs (see
+`docs/LEGAL_SOURCES.md`), the index rebuilt with `m12_run2`, and the
+full production-path evaluation re-run for both the base and the
+promoted model with `finetune/eval_seeds.py`:
+
+    python finetune/eval_seeds.py --model data/models/m12_run2 --label m12_run2_fixed \
+        --json-out finetune/output/revision_eval/m12_run2_fixed.json
+    python finetune/eval_seeds.py --model sentence-transformers/all-MiniLM-L6-v2 \
+        --label base_fixed --json-out finetune/output/revision_eval/base_fixed.json
+
+**Result: the corpus correction changed no headline metric on either
+model.** Citizen-281: recall@5 0.7448 → 0.9554, MRR 0.5656 → 0.8800,
+nDCG@5 0.6040 → 0.8984, top-1 0.4448 → 0.8185, wrong-Act top-1 43 → 19,
+hard-negative 28/29 → 29/29; control-46 identical to the frozen record;
+held-out 41: recall@5 0.7634 → 0.8732, MRR 0.5687 → 0.7122, top-1
+0.4634 → 0.6098. Zero false accepts everywhere. The only movement is
+one benchmark row, `h017` ("my neighbor broke into my house at night"),
+which the post-freeze emergency-routing refinement now routes to
+official help (`risk_active_crime`) instead of answering — so false
+abstains are 46 base / 25 fine-tuned (was 45/24), held-out 11/8 (was
+10/7), abstention accuracy 0.8530 → 0.9201 deployed and 0.7317 → 0.8049
+held-out. `h017` is a policy-routed row, not a gate withholding: its
+target `bns:331` still ranks 1 at dense 0.587. Follow-up benchmark
+unchanged (19/21, 4/4, 4/4, 6/6, 2/2, 2/3; f35 residual). Residual
+failure taxonomy over the 281 answer-expected rows: 18 gate-only, 6
+retrieval-only, 6 both, 1 policy-routed (31 total). Of the 19 wrong-Act
+rows: 7 withheld by the gate (wrong statute never shown), 9 answered
+with a labelled target still inside the shown top-5 window, 3 answered
+with no target in the window (h036, h040, h252); none is a BNS/BNSS
+confusion.
+
+**Case-law coverage guard.** A fresh scripted citation audit
+(`eval/audit_citations.py`: 26 probes across every route, 95 excerpts,
+zero citation defects, including the five repaired sections) surfaced
+one behaviour gap: "supreme court judgment on privacy" was answered
+with five statutory excerpts. No judgment of any court is ingested, so
+`corpus_coverage.py` gained a narrow `case_law` category with its own
+message (`CASE_LAW_MESSAGE`), built under the guard's usual discipline:
+patterns require the case-law framing itself ("case law", "precedent",
+a court name beside "judgment/ruling/verdict", "judgment on <topic>"),
+bare "judgment" keeps answering (BNSS pronouncement, Art. 137 review),
+and the 362-labelled-query over-block scan plus four hand-written
+answerable near-misses pass. Tests in `tests/test_corpus_coverage.py`.
+No benchmark row matches the new category, so every recorded number
+above is unaffected.
+
+**Repeated-seed stability (reviewer-requested).** The frozen protocol's
+byte-identical re-runs verify deterministic reproducibility, not seed
+variance. `finetune/run_seed_experiment.py` retrains the promoted
+configuration under seeds 42–46 — corpus, frozen triplet splits
+(`finetune/data/*.jsonl`, untouched), MNRL, 4 epochs, batch 16, lr
+2e-5, warmup and evaluation protocol all constant, no per-seed tuning —
+and evaluates each run on the production path (deployed + held-out)
+with `eval_seeds.py`. Per-seed results:
+`finetune/output/seed<N>_rev/seed_eval.json`; summary recorded in the
+revision report alongside the paper.
+
+**Repeated-seed results (held-out citizen 41, production path).**
+Recall@5 0.8634 ± 0.0134 (per-seed 0.8732 / 0.8732 / 0.8488 / 0.8732 /
+0.8488 for seeds 42–46; the worst seed clears the base encoder's 0.7634
+by 8.5 pp), MRR 0.7170 ± 0.0214, top-1 citation correctness 0.6244 ±
+0.0408, abstention accuracy 0.7805 ± 0.0345 (false abstains 8/10/7/10/10).
+Deployed benchmark across seeds: recall@5 0.9581 ± 0.0021, MRR 0.8833 ±
+0.0033, top-1 0.8263 ± 0.0068, wrong-Act top-1 16–19 (mean 17.2, base
+43), hard-negative **29/29 on all five seeds**. The retrained seed-42
+run reproduces the promoted `m12_run2` numbers exactly — end-to-end
+training determinism on the corrected corpus.
+
+**One stability finding acted on.** Seed 45 produced the sweep's only
+false accept: h293 ("what is the minimum wage for a construction
+worker", abstain-expected) answered from `bns:146` (unlawful compulsory
+labour) over the 0.41 floor. This subject had deliberately been left to
+the confidence gate after a probe showed the gate abstaining; the sweep
+shows that margin is not seed-robust, which is exactly the guard's
+documented extension condition. `corpus_coverage.py` gained a
+`minimum_wages` category ("minimum wage(s)" occurs zero times in the
+indexed corpus, so the bare phrase is safe), regression-tested in
+`tests/test_corpus_coverage.py`. The change is metric-neutral for the
+promoted model, which already abstained on that row via the gate; the
+seed-45 number is reported as measured, not re-run under the new guard.
+Zero false accepts therefore remains a property of the promoted run and
+of 4 of 5 seed runs — not a guarantee of the configuration, and the
+paper says so.

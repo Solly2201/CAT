@@ -49,6 +49,21 @@ class SourceMeta:
     # damaged -- never to invent or paraphrase one, and never applied to
     # body text, which stays exactly as extracted.
     title_overrides: tuple[tuple[str, str], ...] = ()
+    # Curated repairs for section headers the general _SANHITA_HEADER
+    # pattern provably cannot match in this specific source (a title
+    # wrapped across a line break, an amendment-substitution bracket
+    # before the number, a missing full stop before the em-dash). Each
+    # entry is (host_unit, new_unit, header_pattern, title): the header
+    # is located inside the host chunk's text by the literal-anchored
+    # pattern, the text after it becomes the new chunk, and the text
+    # before it stays with the host. Applied before exclusions, and
+    # asserted like title_overrides: a host that doesn't exist, a
+    # new_unit the chunker already produced, or a pattern that doesn't
+    # match exactly once means the source changed and ingestion refuses
+    # to run with a stale repair. Body text is never edited -- the only
+    # text removed is the header itself (number + title), exactly what
+    # chunk_sanhita strips for every regularly-parsed section.
+    section_splits: tuple[tuple[str, str, str, str], ...] = ()
     coverage_note: str = ""  # honest note on what part of the source is ingested, if partial
     import_date: str = field(default_factory=lambda: date.today().isoformat())
 

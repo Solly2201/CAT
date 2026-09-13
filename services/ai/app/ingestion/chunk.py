@@ -159,6 +159,58 @@ def chunk_constitution(
     return chunks
 
 
+def apply_section_splits(
+    source_id: str,
+    chunks: list[Chunk],
+    splits: tuple[tuple[str, str, str, str], ...],
+) -> list[Chunk]:
+    """Split out sections whose headers _SANHITA_HEADER provably cannot
+    match in this source (see SourceMeta.section_splits). Every failure
+    mode raises rather than degrades: a repair that no longer applies
+    means the source text changed underneath it, and silently keeping a
+    merged chunk is exactly the citation-attribution defect this exists
+    to fix."""
+    by_unit = {c.unit_number: c for c in chunks}
+    for host_unit, new_unit, header_pattern, title in splits:
+        host = by_unit.get(host_unit)
+        if host is None:
+            raise ValueError(
+                f"'{source_id}' section_splits names host unit {host_unit!r}, "
+                f"which the chunker did not produce."
+            )
+        if new_unit in by_unit:
+            raise ValueError(
+                f"'{source_id}' section_splits would create unit {new_unit!r}, "
+                f"but the chunker already produced it; drop the stale repair."
+            )
+        matches = list(re.finditer(header_pattern, host.text))
+        if len(matches) != 1:
+            raise ValueError(
+                f"'{source_id}' section_splits pattern for unit {new_unit!r} "
+                f"matched {len(matches)} times in chunk {host.chunk_id} "
+                f"(expected exactly 1); the source layout has changed."
+            )
+        m = matches[0]
+        new_text = host.text[m.end():].strip()
+        host_text = host.text[: m.start()].strip()
+        if not new_text or not host_text:
+            raise ValueError(
+                f"'{source_id}' section_splits for unit {new_unit!r} would "
+                f"produce an empty chunk; refusing."
+            )
+        host.text = host_text
+        new_chunk = Chunk(
+            chunk_id=f"{source_id}:{new_unit}",
+            source_id=source_id,
+            unit_number=new_unit,
+            title=title,
+            text=new_text,
+        )
+        chunks.insert(chunks.index(host) + 1, new_chunk)
+        by_unit[new_unit] = new_chunk
+    return chunks
+
+
 CHUNKERS = {
     "sanhita": chunk_sanhita,
     "constitution": chunk_constitution,
